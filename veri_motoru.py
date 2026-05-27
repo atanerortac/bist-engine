@@ -71,9 +71,8 @@ def verileri_guncelle():
     if len(hisse_evreni) == 1:
         # Tek hisse varsa MultiIndex dönmez
         hisse = hisse_evreni[0]
-        data.reset_index(inplace=True)
-        for index, row in data.iterrows():
-            tarih = pd.to_datetime(row['Date']).strftime('%Y-%m-%d')
+        for date_idx, row in data.iterrows():
+            tarih = pd.to_datetime(date_idx).strftime('%Y-%m-%d')
             insert_data.append((tarih, hisse, float(row['Open']), float(row['High']), float(row['Low']), float(row['Close']), float(row['Volume'])))
     else:
         for hisse in hisse_evreni:
@@ -81,10 +80,9 @@ def verileri_guncelle():
                 hisse_data = data[hisse]
                 if hisse_data.empty or hisse_data['Close'].isna().all():
                     continue
-                hisse_data = hisse_data.reset_index()
-                for index, row in hisse_data.iterrows():
+                for date_idx, row in hisse_data.iterrows():
                     if pd.isna(row['Close']): continue
-                    tarih = pd.to_datetime(row['Date']).strftime('%Y-%m-%d')
+                    tarih = pd.to_datetime(date_idx).strftime('%Y-%m-%d')
                     insert_data.append((tarih, hisse, float(row['Open']), float(row['High']), float(row['Low']), float(row['Close']), float(row['Volume'])))
 
     if insert_data:
