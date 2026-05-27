@@ -62,7 +62,8 @@ def sync_positions(conn, sb):
     ).fetchall()
     cols = ["ticker", "entry_date", "entry_price", "current_stop", "target_price", "vade", "tier"]
     data = [dict(zip(cols, r)) for r in rows]
-    sb.table("positions").upsert(data, on_conflict="ticker").execute()
+    if data:
+        sb.table("positions").upsert(data, on_conflict="ticker").execute()
     print(f"Synced {len(data)} positions")
 
 
