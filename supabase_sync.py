@@ -129,15 +129,22 @@ def sync_market_breadth(conn, sb):
     print(f"Synced {len(data)} breadth rows")
 
 
+def _safe_sync(name, fn, conn, sb):
+    try:
+        fn(conn, sb)
+    except sqlite3.OperationalError as e:
+        print(f"⚠️ Skipped {name}: {e}")
+
+
 def main():
     sb = _get_supabase()
     conn = sqlite3.connect(DB_PATH)
     try:
-        sync_signals(conn, sb)
-        sync_positions(conn, sb)
-        sync_trades(conn, sb)
-        sync_market_breadth(conn, sb)
-        sync_tavan_takip(conn, sb)
+        _safe_sync("signals", sync_signals, conn, sb)
+        _safe_sync("positions", sync_positions, conn, sb)
+        _safe_sync("trades", sync_trades, conn, sb)
+        _safe_sync("market_breadth", sync_market_breadth, conn, sb)
+        _safe_sync("tavan_takip", sync_tavan_takip, conn, sb)
         print("Sync complete")
     finally:
         conn.close()

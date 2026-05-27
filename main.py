@@ -12,25 +12,25 @@ def ajani_baslat():
     print("🚀 BIST AJANI BAŞLATILIYOR...\n")
     baslangic = time.time()
 
-    try:
-        verileri_guncelle()
-        hesapla_ve_kaydet()
-        sinyalleri_uret()
-        portfoyu_yonet()
-        gunluk_ozet_raporu()
-        takip_raporu_olustur()
-
-    except Exception as e:
-        print(f"\n❌ SİSTEM HATASI: Akış sırasında bir problem oluştu: {e}")
+    verileri_guncelle()
+    hesapla_ve_kaydet()
+    sinyalleri_uret()
+    portfoyu_yonet()
+    gunluk_ozet_raporu()
+    takip_raporu_olustur()
 
     bitis = time.time()
     print(f"⏱️ Toplam Çalışma Süresi: {round(bitis - baslangic, 2)} saniye.")
-    print("⏳ Görev tamamlandı. (Zamanlayıcı aktifse bir sonraki çalışma saati bekleniyor...)\n")
+    print("⏳ Görev tamamlandı.\n")
 
 if __name__ == "__main__":
     # --auto flag: non-interactive mode for CI/scheduled runs
     if "--auto" in sys.argv:
-        ajani_baslat()
+        try:
+            ajani_baslat()
+        except Exception as e:
+            print(f"\n❌ SİSTEM HATASI: {e}")
+            sys.exit(1)
         sys.exit(0)
 
     print("="*40)
