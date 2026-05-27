@@ -1,0 +1,11 @@
+# Watchlist + Virtual Positions
+# Format: TICKER  OR  TICKER,MALIYET,LOT,ALIS_TARIHI
+#
+# Watchlist only (no cost basis):
+THYAO
+ASELS
+SASA
+#
+# Virtual position (tracks hypothetical P&L):
+AKBNK,45.20,100,2026-01-15
+EREGL,52.80,200,2026-02-01

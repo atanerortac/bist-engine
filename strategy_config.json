@@ -1,0 +1,179 @@
+{
+  "_comment": "Set enabled/points per criterion. Toggling an indicator auto-adjusts Diamond/Ruby thresholds via _max_puan().",
+
+  "market": {
+    "yesil_threshold": 60,
+    "gap_up_filter": true,
+    "gap_up_pct": 1.02,
+    "xu100_regime_filter": true,
+    "kisa_ruby_min_breadth": 60,
+    "xu100_ema50_ruby_gate": false,
+    "xutum_ruby_filter": false,
+    "xutum_rs_threshold": 3.0,
+    "try_regime_filter": false,
+    "xbank_ruby_filter": false,
+    "xu100_roc_filter": false,
+    "xu100_roc_min": -2.0,
+    "weekly_trend_filter": true,
+    "rolling_gates": {
+      "_comment": "J3: per-bucket rolling PF gates. enabled=true ??? reduce quota to reduced_cap when last-N PF < min_pf (min_n samples required).",
+      "kisa_ruby":        {"enabled": true,  "min_n": 10, "min_pf": 0.8, "reduced_cap": 1, "window": 15},
+      "orta_firsat":      {"enabled": true,  "min_n": 10, "min_pf": 0.7, "reduced_cap": 3, "window": 20},
+      "kisa_diamond":     {"enabled": false, "min_n": 10, "min_pf": 0.7, "reduced_cap": 3, "window": 15},
+      "orta_diamond":     {"enabled": false, "min_n": 10, "min_pf": 0.7, "reduced_cap": 1, "window": 15},
+      "momentum_diamond": {"enabled": true,  "min_n": 10, "min_pf": 0.7, "reduced_cap": 1, "window": 15}
+    }
+  },
+
+  "kisa": {
+    "52w_high_bonus": false,
+    "52w_high_min_pct": -20,
+    "macd_crossover": true,
+    "rsi_min": 50,
+    "rsi_max": 65,
+    "volume_spike_5d": true,
+    "volume_spike_20d": false,
+    "ema20_above": true,
+    "stoch_crossover": true,
+    "mfi_above50": true,
+    "bb_support_entry": true,
+    "bb_squeeze_expand": false,
+    "extended_run_penalty": true,
+    "extended_run_threshold": 1.12,
+    "coiling_filter": true,
+    "coiling_max_pct": 50,
+    "ema200_bonus": false,
+    "volume_accum_10d": true,
+    "volume_accum_min_days": 5,
+    "rsi_divergence_bonus": false
+  },
+
+  "orta": {
+    "52w_high_bonus": false,
+    "52w_high_min_pct": -15,
+    "vol_adaptive_target": true,
+    "ema50_above": true,
+    "adx_gate": false,
+    "adx_min": 22,
+    "ema200_gate": false,
+    "macd_crossover": true,
+    "obv_above_ema": true,
+    "ema20_above": true,
+    "rsi_min": 50,
+    "rsi_max": 60,
+    "rs_xu100": true,
+    "rs_xu100_bonus": 15,
+    "rs_min_pct": 5,
+    "volume_spike_20d": true,
+    "xu100_vol_gate": false,
+    "xu100_vol_max": 0.025,
+    "rsi_divergence_bonus": false
+  },
+
+  "scoring": {
+    "_comment": "enabled=false disables criterion AND removes its points from max_puan ??? thresholds auto-adjust.",
+    "kisa_vade": {
+      "_base": 50,
+      "vol_bonus":    { "enabled": true,  "points": 25 },
+      "rsi_bonus":    { "enabled": true,  "points": 15 },
+      "stoch_bonus":  { "enabled": true,  "points": 10 },
+      "ema200_bonus": { "enabled": false, "points": 10 },
+      "bb_support":   { "enabled": false, "points": 10 },
+      "bb_squeeze":   { "enabled": false, "points": 5  },
+      "vol_accum":    { "enabled": false, "points": 10 },
+      "52w_high":     { "enabled": false, "points": 10, "min_pct": -10 }
+    },
+    "orta_vade": {
+      "ema50_above":    { "enabled": true,  "points": 25 },
+      "adx_threshold":  { "enabled": true,  "points": 20 },
+      "macd_crossover": { "enabled": true,  "points": 20 },
+      "macd_fresh":     { "enabled": true,  "points": 10 },
+      "obv_above_ema":  { "enabled": true,  "points": 15 },
+      "ema20_above":    { "enabled": true,  "points": 10 },
+      "rsi_range":      { "enabled": true,  "points": 10 },
+      "rs_xu100":       { "enabled": true,  "points": 15 },
+      "volume_20d":     { "enabled": true,  "points": 10 },
+      "52w_high":       { "enabled": false, "points": 15, "min_pct": -15 }
+    },
+    "duzeltme": {
+      "ema20_proximity_tight": { "enabled": true, "points": 30 },
+      "ema20_proximity_loose": { "enabled": true, "points": 15 },
+      "low_volume_pullback":   { "enabled": true, "points": 25 },
+      "rsi_cooling_ideal":     { "enabled": true, "points": 20 },
+      "rsi_cooling_deep":      { "enabled": true, "points": 10 },
+      "stoch_oversold":        { "enabled": true, "points": 15 },
+      "stoch_mid":             { "enabled": true, "points": 8  }
+    },
+    "momentum_patlama": {
+      "pocket_pivot":  { "enabled": true, "points": 30 },
+      "squeeze_break": { "enabled": true, "points": 20 },
+      "rsi_zone":      { "enabled": true, "points": 20 },
+      "ema_structure": { "enabled": true, "points": 15 },
+      "obv_accum":     { "enabled": true, "points": 15 },
+      "52w_high":      { "enabled": false, "points": 15, "min_pct": -10 }
+    }
+  },
+
+  "duzeltme": {
+    "enabled":         false,
+    "rsi_floor":       42,
+    "ema50_ascending": true,
+    "ema200_gate":     true
+  },
+
+  "momentum": {
+    "52w_high_bonus": false,
+    "52w_high_min_pct": -10,
+    "mfi_gate": true,
+    "pp_sq_required": false,
+    "macd_hist_gate": false,
+    "vdu_max_accum": null,
+    "diamond_rs63_min": 5,
+    "diamond_vol_mult": 1.8,
+    "diamond_bullish_close": true,
+    "diamond_ema_stack": true,
+    "diamond_rs_accel": false,
+    "diamond_vol_persist": true,
+    "diamond_ema20_proximity_max": 1.10,
+    "diamond_min_breadth": 60
+  },
+
+  "thresholds": {
+    "_comment": "Momentum gates relaxed: pp_sq_required+macd_hist_gate disabled (over-tightened), rs63_min 20???5, vdu_max_accum removed. Diamond pct 0.85???0.75.",
+    "kisa_diamond_pct":    0.74,
+    "kisa_ruby_pct":       0.65,
+    "orta_diamond_pct":    0.80,
+    "orta_firsat_pct":     0.55,
+    "duzeltme_firsat_pct": 0.28,
+    "momentum_diamond_pct": 0.75,
+    "momentum_firsat_pct": 0.70
+  },
+
+  "backtest": {
+    "target_atr_kisa":     2.5,
+    "target_atr_orta":     5.0,
+    "stop_atr_kisa":       2.0,
+    "stop_atr_orta":       2.5,
+    "stop_atr_duzeltme":   2.0,
+    "target_atr_duzeltme": 3.0,
+    "min_rr_duzeltme":     1.5,
+    "use_trailing_stop":   false,
+    "min_rr_kisa":         1.2,
+    "min_rr_orta":         2.0,
+    "stop_atr_momentum":   1.5,
+    "target_atr_momentum": 3.0,
+    "min_rr_momentum":     1.8,
+    "commission_rt":       0.0,
+    "slippage_each":       0.005,
+    "hard_max_loss_pct":   0.22
+  },
+
+  "position_sizing": {
+    "enabled": true,
+    "portfolio_value": 100000,
+    "risk_pct": 0.02,
+    "max_position_pct": 0.15
+  }
+}
+
+

@@ -1,0 +1,51 @@
+name: Daily BIST Pipeline
+
+on:
+  schedule:
+    # 15:30 UTC = 18:30 Turkey (UTC+3), weekdays only
+    - cron: '30 15 * * 1-5'
+  workflow_dispatch:  # allow manual trigger
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Restore database cache
+        uses: actions/cache@v4
+        with:
+          path: bist_ajan.db
+          key: bist-db-${{ runner.os }}
+          restore-keys: |
+            bist-db-
+
+      - name: Run BIST pipeline
+        run: python main.py --auto
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+      - name: Sync to Supabase
+        run: python supabase_sync.py
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+
+      - name: Save database cache
+        uses: actions/cache@v4
+        with:
+          path: bist_ajan.db
+          key: bist-db-${{ runner.os }}

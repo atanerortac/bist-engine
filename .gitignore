@@ -1,0 +1,13 @@
+bist_ajan.db
+bist_ajan.db-wal
+bist_ajan.db-shm
+bist_ajan.log
+benim_hisselerim.txt
+gercek_islemler.txt
+takip_raporu.html
+takip_raporu.md
+.env
+__pycache__/
+*.pyc
+tasks/backtest_trades*.csv
+.claude/
