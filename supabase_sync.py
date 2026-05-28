@@ -10,6 +10,7 @@ Tables synced:
   positions      <- all from Aktif_Pozisyonlar
   trades         <- all from Islem_Gecmisi
   market_breadth <- last 90 days (derived: date + breadth_pct + durum)
+  prices         <- last 90 days from Hisse_Verileri (ticker, date, close)
 """
 
 import os
@@ -112,6 +113,21 @@ def sync_tavan_takip(conn, sb):
     print(f"Synced {len(data)} tavan_takip rows")
 
 
+def sync_prices(conn, sb):
+    cutoff = (datetime.now() - timedelta(days=SYNC_DAYS)).strftime("%Y-%m-%d")
+    rows = conn.execute(
+        "SELECT Hisse, Tarih, Kapanis FROM Hisse_Verileri WHERE Tarih >= ? ORDER BY Tarih DESC",
+        (cutoff,)
+    ).fetchall()
+    data = [{"ticker": r[0], "date": r[1], "close": r[2]} for r in rows]
+    if data:
+        # upsert in batches of 1000 to avoid payload limits (~54k rows total)
+        batch_size = 1000
+        for i in range(0, len(data), batch_size):
+            sb.table("prices").upsert(data[i:i + batch_size], on_conflict="ticker,date").execute()
+    print(f"Synced {len(data)} price rows")
+
+
 def sync_market_breadth(conn, sb):
     cutoff = (datetime.now() - timedelta(days=SYNC_DAYS)).strftime("%Y-%m-%d")
     rows = conn.execute(
@@ -146,6 +162,7 @@ def main():
         _safe_sync("trades", sync_trades, conn, sb)
         _safe_sync("market_breadth", sync_market_breadth, conn, sb)
         _safe_sync("tavan_takip", sync_tavan_takip, conn, sb)
+        _safe_sync("prices", sync_prices, conn, sb)
         print("Sync complete")
     finally:
         conn.close()
