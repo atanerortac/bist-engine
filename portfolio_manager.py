@@ -93,17 +93,42 @@ def portfoyu_yonet():
             if yeni_potansiyel_stop > stop_loss:
                 cursor.execute("UPDATE Aktif_Pozisyonlar SET Guncel_Stop_Loss=? WHERE Hisse=?", (yeni_potansiyel_stop, hisse))
 
-    # 2. YENİ SİNYALLERİ EKLE — T1: filter blocked signals (Bloke=1 are info-only)
+    # 2. YENİ SİNYALLERİ EKLE — Phase 0.1: enter the PREVIOUS day's signals at
+    #    TODAY's open (honest next-day-open fill). A signal is computed on day T's
+    #    close, so the earliest executable price is T+1 open. T1: Bloke=1 are info-only.
     try:
-        yeni_sinyaller = pd.read_sql(
-            "SELECT * FROM Gunluk_Sinyaller WHERE Tarih=? AND (Bloke IS NULL OR Bloke=0)",
+        # Most recent signal date strictly before today → those get filled at today's open
+        cursor.execute(
+            "SELECT DISTINCT Tarih FROM Gunluk_Sinyaller WHERE Tarih < ? ORDER BY Tarih DESC LIMIT 1",
+            (bugunun_tarihi,)
+        )
+        _prev = cursor.fetchone()
+        sinyal_tarihi = _prev[0] if _prev else None
+
+        # Today's opening prices (the fill price for next-day-open entry)
+        acilis_df = pd.read_sql(
+            "SELECT Hisse, Acilis FROM Hisse_Verileri WHERE Tarih=?",
             conn, params=(bugunun_tarihi,)
         )
-        for index, row in yeni_sinyaller.iterrows():
-            cursor.execute("SELECT 1 FROM Aktif_Pozisyonlar WHERE Hisse=?", (row['Hisse'],))
-            if cursor.fetchone():
-                continue
-            cursor.execute('INSERT INTO Aktif_Pozisyonlar (Hisse, Alis_Tarihi, Alis_Fiyati, Guncel_Stop_Loss, Hedef_Fiyat, Vade, Tier) VALUES (?, ?, ?, ?, ?, ?, ?)', (row['Hisse'], row['Tarih'], row['Kapanis'], row['Stop_Loss'], row['Hedef_Fiyat'], row.get('Vade'), row.get('Tier')))
+        acilis_map = dict(zip(acilis_df['Hisse'], acilis_df['Acilis']))
+
+        if sinyal_tarihi:
+            yeni_sinyaller = pd.read_sql(
+                "SELECT * FROM Gunluk_Sinyaller WHERE Tarih=? AND (Bloke IS NULL OR Bloke=0)",
+                conn, params=(sinyal_tarihi,)
+            )
+            for index, row in yeni_sinyaller.iterrows():
+                cursor.execute("SELECT 1 FROM Aktif_Pozisyonlar WHERE Hisse=?", (row['Hisse'],))
+                if cursor.fetchone():
+                    continue
+                acilis = acilis_map.get(row['Hisse'])
+                if acilis is None or pd.isna(acilis) or float(acilis) <= 0:
+                    continue  # no opening price available → cannot fill honestly
+                acilis = float(acilis)
+                # Gap filter: skip if today's open already gapped >2% above signal close
+                if row['Kapanis'] and acilis > float(row['Kapanis']) * 1.02:
+                    continue
+                cursor.execute('INSERT INTO Aktif_Pozisyonlar (Hisse, Alis_Tarihi, Alis_Fiyati, Guncel_Stop_Loss, Hedef_Fiyat, Vade, Tier) VALUES (?, ?, ?, ?, ?, ?, ?)', (row['Hisse'], bugunun_tarihi, acilis, row['Stop_Loss'], row['Hedef_Fiyat'], row.get('Vade'), row.get('Tier')))
     except Exception as e:
         print(f"⚠️ Insert hatası: {e}")
 

@@ -455,17 +455,32 @@ def _simulate_trade(signal, sinyal_tarihi, hisse_raw_df, all_dates,
         sig_idx = all_dates.index(sinyal_tarihi)
     except ValueError:
         return None
-    # T2 Option A: enter at signal-day close (matches live behavior)
-    entry_tarih  = sinyal_tarihi
+    # Phase 0.1: enter at NEXT DAY's OPEN — honest fill. Signal is computed on the
+    # close of day T, so the earliest executable price is T+1 open. (Reverses the
+    # T2 close-entry, which captured the unattainable signal-day close.)
     signal_close = signal['Kapanis']
     ohlcv = hisse_raw_df.set_index('Tarih')
-
-    if entry_tarih not in ohlcv.index:
-        return None
     if signal_close <= 0:
         return None
 
-    entry_price = float(signal_close) * (1 + SLIPPAGE_EACH)
+    entry_idx = sig_idx + 1
+    if entry_idx >= len(all_dates):
+        return None
+    entry_tarih = all_dates[entry_idx]
+    if entry_tarih not in ohlcv.index:
+        return None
+    try:
+        entry_open = float(ohlcv.loc[entry_tarih, 'Acilis'])
+    except (TypeError, ValueError, KeyError):
+        return None
+    if np.isnan(entry_open) or entry_open <= 0:
+        return None
+    # Gap filter: skip if the stock already gapped up beyond threshold at the open
+    # (chasing a gap-up degrades fills and edge).
+    if gap_filter and entry_open > float(signal_close) * gap_up_pct:
+        return None
+
+    entry_price = entry_open * (1 + SLIPPAGE_EACH)
 
     s_atr = stop_atr if stop_atr is not None else p['stop_atr']
     stop  = max(entry_price - s_atr * atr, entry_price * p['stop_floor'])
@@ -481,9 +496,9 @@ def _simulate_trade(signal, sinyal_tarihi, hisse_raw_df, all_dates,
     partial1_done  = False
     p1_level       = entry_price + partial_exit_atr * atr if partial_exit else float('inf')
 
-    entry_idx = sig_idx
-    # Simulation starts from day after signal (entered at close, checks following days)
-    sim_dates     = all_dates[entry_idx + 1: entry_idx + MAX_HOLD[vade] + 1]
+    # Simulation runs from the entry day (inclusive): intraday stop/target may hit
+    # the same day we entered at the open.
+    sim_dates     = all_dates[entry_idx: entry_idx + MAX_HOLD[vade]]
     max_en_yuksek = entry_price
     prev_close    = float(signal_close)
 
