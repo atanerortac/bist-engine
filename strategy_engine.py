@@ -429,8 +429,8 @@ def strateji_sec(rolling_perf, cfg, verbose=True):
     result = {
         ('Kisa', 'Diamond'):     5,
         ('Kisa', 'Ruby'):        8,
-        ('Orta', 'Diamond'):     3,
-        ('Orta', 'Firsat'):      5,
+        ('Orta', 'Diamond'):     2,   # 4.3: reduced from 3 (weakest WR 32.8%, CPCV 5th)
+        ('Orta', 'Firsat'):      5,   # 4.3: kept at 5 (quota=6 diluted PF 1.29→1.09 in 24m test)
         ('Momentum', 'Diamond'): 5,
     }
 
@@ -568,6 +568,19 @@ def sinyalleri_uret():
         except Exception:
             pass
 
+    # ── XU100 EMA200 MASTER-SWITCH (tüm sinyaller bloke — derin bear market) ──
+    xu100_ema200_ok = True
+    if cfg.get('market', {}).get('xu100_ema200_filter', False):
+        try:
+            _xu = pd.read_sql(
+                "SELECT Kapanis, EMA_200 FROM Hisse_Indikatorleri WHERE Hisse='XU100.IS' AND Tarih<=? ORDER BY Tarih DESC LIMIT 1",
+                conn, params=[son_tarih]
+            )
+            if not _xu.empty and _xu.iloc[0]['EMA_200'] is not None:
+                xu100_ema200_ok = float(_xu.iloc[0]['Kapanis']) > float(_xu.iloc[0]['EMA_200'])
+        except Exception:
+            pass
+
     # ── USD/TRY REJİMİ (TRY zayıflıyor mu? Orta için risk-off) ──
     usdtry_above_ema20 = False
     if cfg.get('market', {}).get('try_regime_filter', False):
@@ -648,6 +661,22 @@ def sinyalleri_uret():
             _ema100 = _safe(row.get('EMA_100', 0))
             if _ema100 > 0 and _safe(row['Kapanis']) < _ema100:
                 continue
+        # EMA gate for Kisa Diamond — EMA_100 or EMA_50 depending on config
+        if tier == 'Diamond' and cfg.get('market', {}).get('kisa_diamond_ema100_gate', False):
+            _ema100 = _safe(row.get('EMA_100', 0))
+            if _ema100 > 0 and _safe(row['Kapanis']) < _ema100:
+                continue
+        if tier == 'Diamond' and cfg.get('market', {}).get('kisa_diamond_ema50_gate', False):
+            _ema50 = _safe(row.get('EMA_50', 0))
+            if _ema50 > 0 and _safe(row['Kapanis']) < _ema50:
+                continue
+        # Mid-zone gate: block EMA_50-EMA_100 zone (these signals have poor quality empirically)
+        # Keeps: below EMA_50 (recovery bounces) OR above EMA_100 (uptrend continuation)
+        if tier == 'Diamond' and cfg.get('market', {}).get('kisa_diamond_mid_zone_gate', False):
+            _ema50  = _safe(row.get('EMA_50', 0))
+            _ema100 = _safe(row.get('EMA_100', 0))
+            if _ema50 > 0 and _ema100 > 0 and _ema50 <= _safe(row['Kapanis']) < _ema100:
+                continue
         # SARI: tüm Kisa bloke (Diamond+Ruby). KIRMIZI: tüm tier bloke — M2 fix
         # Ruby: ek breadth kapısı — N4 fix
         _ruby_min_b = float(cfg.get('market', {}).get('kisa_ruby_min_breadth', 55))
@@ -656,7 +685,7 @@ def sinyalleri_uret():
         kisa_ruby_bloke = (tier == 'Ruby') and (
             ema20_oran < _ruby_min_b or (_xutum_on and xutum_rs_xu100 > _xutum_thr)
         )
-        kisa_bloke = piyasa_durumu in ('KIRMIZI', 'SARI') or kisa_ruby_bloke
+        kisa_bloke = piyasa_durumu in ('KIRMIZI', 'SARI') or kisa_ruby_bloke or not xu100_ema200_ok
 
         kapanis = _safe(row['Kapanis'])
         atr = _safe(row['ATR_14'])
@@ -687,7 +716,7 @@ def sinyalleri_uret():
         o_cfg = cfg.get('orta', {})
         _o_vol_blocked  = o_cfg.get('xu100_vol_gate', False) and xu100_vol_ratio > float(o_cfg.get('xu100_vol_max', 0.025))
         _try_blocked    = cfg.get('market', {}).get('try_regime_filter', False) and usdtry_above_ema20
-        orta_bloke = piyasa_durumu in ('SARI', 'KIRMIZI') or _o_vol_blocked or _try_blocked
+        orta_bloke = piyasa_durumu in ('SARI', 'KIRMIZI') or _o_vol_blocked or _try_blocked or not xu100_ema200_ok
         for _, row in filtreli.iterrows():
             kapanis = _safe(row['Kapanis'])
             atr = _safe(row['ATR_14'])
@@ -709,6 +738,16 @@ def sinyalleri_uret():
             if puan < orta_firsat:
                 continue
             tier = 'Diamond' if puan >= orta_diamond else 'Firsat'
+            # EMA_100 gate for Orta Diamond (medium-term trend alignment, like weekly_trend_filter for Kisa Ruby)
+            if tier == 'Diamond' and o_cfg.get('diamond_ema100_gate', False):
+                _ema100 = _safe(row.get('EMA_100', 0))
+                if _ema100 > 0 and kapanis < _ema100:
+                    continue
+            # ADX Diamond gate — Diamond-only ADX filter (different from adx_gate which blocks all Orta)
+            if tier == 'Diamond' and o_cfg.get('diamond_adx_gate', False):
+                _adx = _safe(row.get('ADX_14', 0))
+                if _adx < o_cfg.get('diamond_adx_min', 22):
+                    continue
 
             stop = round(max(kapanis - orta_stop_atr * atr, kapanis * 0.82), 2)
             # N2: Vol-Adaptive target for Orta (36m validated: PF 1.53→1.62)
@@ -865,7 +904,7 @@ def sinyalleri_uret():
             )
 
             _diamond_ok_in_sari = (tier == 'Diamond' and ema20_oran >= _diamond_min_breadth)
-            _mom_bloke = piyasa_durumu == 'KIRMIZI' or (piyasa_durumu == 'SARI' and not _diamond_ok_in_sari)
+            _mom_bloke = piyasa_durumu == 'KIRMIZI' or (piyasa_durumu == 'SARI' and not _diamond_ok_in_sari) or not xu100_ema200_ok
             (bloke_adaylar if _mom_bloke else adaylar).append({
                 'Hisse': row['Hisse'], 'Kapanis': kapanis, 'Vade': 'Momentum', 'Tier': tier,
                 'Puan': puan, 'PuanPct': puan / mom_max if mom_max else 0,
@@ -895,8 +934,8 @@ def sinyalleri_uret():
     BLOKE_CAPS = {
         ('Kisa', 'Diamond'):     5,
         ('Kisa', 'Ruby'):        8,
-        ('Orta', 'Diamond'):     3,
-        ('Orta', 'Firsat'):      5,
+        ('Orta', 'Diamond'):     2,   # 4.3: matches live CAPS
+        ('Orta', 'Firsat'):      5,   # 4.3: matches live CAPS
         ('Momentum', 'Diamond'): 5,
     }
     bloke_sinyaller = []

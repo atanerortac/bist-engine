@@ -54,13 +54,13 @@ def verileri_guncelle():
     if not son_tarih:
         print("🤖 1/5 - Veri Motoru: Veritabanı BOŞ. İlk kurulum yapılıyor, 5 Yıllık veriler çekilecek (Zaman alabilir)...")
         # Toplu indirme (Çok daha hızlı)
-        data = yf.download(hisse_evreni, period="5y", group_by="ticker", threads=True, multi_level_index=True)
+        data = yf.download(hisse_evreni, period="5y", group_by="ticker", threads=True, multi_level_index=True, auto_adjust=True, repair=True)
     else:
         # son_tarih'ten sonrasını çekmek için format ayarlaması
         # yfinance start parametresini bir gün öncesinden alabiliriz garantili olması için
         baslangic_tarihi = (pd.to_datetime(son_tarih) - pd.Timedelta(days=5)).strftime('%Y-%m-%d')
         print(f"🤖 1/5 - Veri Motoru: Veritabanı DOLU. Eksik veriler ({baslangic_tarihi} sonrası) çekiliyor...")
-        data = yf.download(hisse_evreni, start=baslangic_tarihi, group_by="ticker", threads=True, multi_level_index=True)
+        data = yf.download(hisse_evreni, start=baslangic_tarihi, group_by="ticker", threads=True, multi_level_index=True, auto_adjust=True, repair=True)
 
     # Datanın parse edilip DB'ye yazılması
     # yfinance toplu indirdiğinde MultiIndex döner (Eğer birden fazla hisse varsa)
@@ -71,8 +71,9 @@ def verileri_guncelle():
     if len(hisse_evreni) == 1:
         # Tek hisse varsa MultiIndex dönmez
         hisse = hisse_evreni[0]
-        for date_idx, row in data.iterrows():
-            tarih = pd.to_datetime(date_idx).strftime('%Y-%m-%d')
+        data.reset_index(inplace=True)
+        for index, row in data.iterrows():
+            tarih = pd.to_datetime(row['Date']).strftime('%Y-%m-%d')
             insert_data.append((tarih, hisse, float(row['Open']), float(row['High']), float(row['Low']), float(row['Close']), float(row['Volume'])))
     else:
         for hisse in hisse_evreni:
@@ -80,9 +81,10 @@ def verileri_guncelle():
                 hisse_data = data[hisse]
                 if hisse_data.empty or hisse_data['Close'].isna().all():
                     continue
-                for date_idx, row in hisse_data.iterrows():
+                hisse_data = hisse_data.reset_index()
+                for index, row in hisse_data.iterrows():
                     if pd.isna(row['Close']): continue
-                    tarih = pd.to_datetime(date_idx).strftime('%Y-%m-%d')
+                    tarih = pd.to_datetime(row['Date']).strftime('%Y-%m-%d')
                     insert_data.append((tarih, hisse, float(row['Open']), float(row['High']), float(row['Low']), float(row['Close']), float(row['Volume'])))
 
     if insert_data:

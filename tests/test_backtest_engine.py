@@ -200,7 +200,10 @@ def test_simulate_trade_entry_price_includes_slippage():
     result = be._simulate_trade(sig, entry_date, raw, all_dates,
                                 target_atr=3.0, gap_filter=False)
     if result is not None:
-        expected_entry = close * (1 + be.SLIPPAGE_EACH)
+        # Honest fill: entry executes at the NEXT day's open (signal is computed on
+        # day-T close, earliest executable price is T+1 open), then slippage is added.
+        next_open = float(raw.loc[raw['Tarih'] == all_dates[6], 'Acilis'].iloc[0])
+        expected_entry = next_open * (1 + be.SLIPPAGE_EACH)
         assert abs(result['Entry'] - expected_entry) < 0.001
 
 

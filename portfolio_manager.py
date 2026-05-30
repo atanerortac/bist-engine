@@ -3,17 +3,34 @@ import pandas as pd
 import sqlite3
 from datetime import date as _date
 
+
+def _hesapla_lot_pm(kapanis, stop_loss, ps_cfg):
+    """Fixed-fractional lot sizing. Returns lot count or None if sizing disabled/invalid."""
+    if not ps_cfg.get("enabled") or not ps_cfg.get("portfolio_value"):
+        return None
+    stop_mesafe = kapanis - stop_loss
+    if stop_mesafe <= 0:
+        return None
+    risk_tl = ps_cfg["portfolio_value"] * ps_cfg.get("risk_pct", 0.02)
+    lot = int(risk_tl / stop_mesafe)
+    if lot < 1:
+        return None
+    max_lot = int(ps_cfg["portfolio_value"] * ps_cfg.get("max_position_pct", 0.15) / kapanis)
+    lot = min(lot, max_lot)
+    return lot if lot >= 1 else None
+
+
 def portfoyu_yonet():
     print("💼 4/5 - Portföy Yöneticisi: Risk ve Trailing Stop yönetimi...")
     conn = sqlite3.connect('bist_ajan.db')
     cursor = conn.cursor()
 
-    cursor.execute('CREATE TABLE IF NOT EXISTS Aktif_Pozisyonlar (Hisse TEXT PRIMARY KEY, Alis_Tarihi TEXT, Alis_Fiyati REAL, Guncel_Stop_Loss REAL, Hedef_Fiyat REAL, Vade TEXT, Tier TEXT)')
-    cursor.execute('CREATE TABLE IF NOT EXISTS Islem_Gecmisi (Hisse TEXT, Alis_Tarihi TEXT, Satis_Tarihi TEXT, Alis_Fiyati REAL, Satis_Fiyati REAL, Kar_Zarar_Yuzdesi REAL, Kapanis_Nedeni TEXT, Vade TEXT, Tier TEXT)')
-    for _col in ('Vade', 'Tier'):
+    cursor.execute('CREATE TABLE IF NOT EXISTS Aktif_Pozisyonlar (Hisse TEXT PRIMARY KEY, Alis_Tarihi TEXT, Alis_Fiyati REAL, Guncel_Stop_Loss REAL, Hedef_Fiyat REAL, Vade TEXT, Tier TEXT, Lot_Adet INTEGER)')
+    cursor.execute('CREATE TABLE IF NOT EXISTS Islem_Gecmisi (Hisse TEXT, Alis_Tarihi TEXT, Satis_Tarihi TEXT, Alis_Fiyati REAL, Satis_Fiyati REAL, Kar_Zarar_Yuzdesi REAL, Kapanis_Nedeni TEXT, Vade TEXT, Tier TEXT, Lot_Adet INTEGER)')
+    for _col, _ctype in [('Vade', 'TEXT'), ('Tier', 'TEXT'), ('Lot_Adet', 'INTEGER')]:
         for _tbl in ('Aktif_Pozisyonlar', 'Islem_Gecmisi'):
             try:
-                cursor.execute(f"ALTER TABLE {_tbl} ADD COLUMN {_col} TEXT")
+                cursor.execute(f"ALTER TABLE {_tbl} ADD COLUMN {_col} {_ctype}")
             except Exception:
                 pass
 
@@ -23,6 +40,7 @@ def portfoyu_yonet():
     except Exception:
         _cfg = {}
     _bst = _cfg.get('backtest', {})
+    _ps  = _cfg.get('position_sizing', {})
     STOP_ATR = {
         'Kisa':     float(_bst.get('stop_atr_kisa', 2.0)),
         'Orta':     float(_bst.get('stop_atr_orta', 2.5)),
@@ -61,13 +79,17 @@ def portfoyu_yonet():
 
         _vade = row.get('Vade'); _vade = _vade if _vade and str(_vade) != 'nan' else None
         _tier = row.get('Tier'); _tier = _tier if _tier and str(_tier) != 'nan' else None
+        try:
+            _lot = int(row.get('Lot_Adet')) if pd.notna(row.get('Lot_Adet', None)) else None
+        except (ValueError, TypeError):
+            _lot = None
 
         # T4: max hold — force close at today's close when hold period exceeded
         try:
             hold_days = (_date.fromisoformat(bugunun_tarihi) - _date.fromisoformat(row['Alis_Tarihi'])).days
             if hold_days >= MAX_HOLD.get(_vade, 30):
                 kz_oran = ((guncel_fiyat - alis_fiyati) / alis_fiyati) * 100
-                cursor.execute("INSERT INTO Islem_Gecmisi (Hisse, Alis_Tarihi, Satis_Tarihi, Alis_Fiyati, Satis_Fiyati, Kar_Zarar_Yuzdesi, Kapanis_Nedeni, Vade, Tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (hisse, row['Alis_Tarihi'], bugunun_tarihi, alis_fiyati, guncel_fiyat, kz_oran, 'Max Hold', _vade, _tier))
+                cursor.execute("INSERT INTO Islem_Gecmisi (Hisse, Alis_Tarihi, Satis_Tarihi, Alis_Fiyati, Satis_Fiyati, Kar_Zarar_Yuzdesi, Kapanis_Nedeni, Vade, Tier, Lot_Adet) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (hisse, row['Alis_Tarihi'], bugunun_tarihi, alis_fiyati, guncel_fiyat, kz_oran, 'Max Hold', _vade, _tier, _lot))
                 cursor.execute("DELETE FROM Aktif_Pozisyonlar WHERE Hisse=?", (hisse,))
                 continue
         except Exception:
@@ -76,15 +98,15 @@ def portfoyu_yonet():
         # T6: target check requires en_dusuk > stop_loss (both legs can't hit same day)
         if en_yuksek >= hedef_fiyat and en_dusuk > stop_loss:
             kz_oran = ((hedef_fiyat - alis_fiyati) / alis_fiyati) * 100
-            cursor.execute("INSERT INTO Islem_Gecmisi (Hisse, Alis_Tarihi, Satis_Tarihi, Alis_Fiyati, Satis_Fiyati, Kar_Zarar_Yuzdesi, Kapanis_Nedeni, Vade, Tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (hisse, row['Alis_Tarihi'], bugunun_tarihi, alis_fiyati, hedef_fiyat, kz_oran, 'Hedef Fiyat', _vade, _tier))
+            cursor.execute("INSERT INTO Islem_Gecmisi (Hisse, Alis_Tarihi, Satis_Tarihi, Alis_Fiyati, Satis_Fiyati, Kar_Zarar_Yuzdesi, Kapanis_Nedeni, Vade, Tier, Lot_Adet) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (hisse, row['Alis_Tarihi'], bugunun_tarihi, alis_fiyati, hedef_fiyat, kz_oran, 'Hedef Fiyat', _vade, _tier, _lot))
             cursor.execute("DELETE FROM Aktif_Pozisyonlar WHERE Hisse=?", (hisse,))
         elif (guncel_fiyat / alis_fiyati - 1) < -0.22:
             kz_oran = ((guncel_fiyat - alis_fiyati) / alis_fiyati) * 100
-            cursor.execute("INSERT INTO Islem_Gecmisi (Hisse, Alis_Tarihi, Satis_Tarihi, Alis_Fiyati, Satis_Fiyati, Kar_Zarar_Yuzdesi, Kapanis_Nedeni, Vade, Tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (hisse, row['Alis_Tarihi'], bugunun_tarihi, alis_fiyati, guncel_fiyat, kz_oran, 'HardStop', _vade, _tier))
+            cursor.execute("INSERT INTO Islem_Gecmisi (Hisse, Alis_Tarihi, Satis_Tarihi, Alis_Fiyati, Satis_Fiyati, Kar_Zarar_Yuzdesi, Kapanis_Nedeni, Vade, Tier, Lot_Adet) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (hisse, row['Alis_Tarihi'], bugunun_tarihi, alis_fiyati, guncel_fiyat, kz_oran, 'HardStop', _vade, _tier, _lot))
             cursor.execute("DELETE FROM Aktif_Pozisyonlar WHERE Hisse=?", (hisse,))
         elif guncel_fiyat <= stop_loss:
             kz_oran = ((stop_loss - alis_fiyati) / alis_fiyati) * 100
-            cursor.execute("INSERT INTO Islem_Gecmisi (Hisse, Alis_Tarihi, Satis_Tarihi, Alis_Fiyati, Satis_Fiyati, Kar_Zarar_Yuzdesi, Kapanis_Nedeni, Vade, Tier) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)", (hisse, row['Alis_Tarihi'], bugunun_tarihi, alis_fiyati, stop_loss, kz_oran, 'Stop Loss', _vade, _tier))
+            cursor.execute("INSERT INTO Islem_Gecmisi (Hisse, Alis_Tarihi, Satis_Tarihi, Alis_Fiyati, Satis_Fiyati, Kar_Zarar_Yuzdesi, Kapanis_Nedeni, Vade, Tier, Lot_Adet) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (hisse, row['Alis_Tarihi'], bugunun_tarihi, alis_fiyati, stop_loss, kz_oran, 'Stop Loss', _vade, _tier, _lot))
             cursor.execute("DELETE FROM Aktif_Pozisyonlar WHERE Hisse=?", (hisse,))
         else:
             # T3: per-vade trailing stop multiplier from config
@@ -97,7 +119,6 @@ def portfoyu_yonet():
     #    TODAY's open (honest next-day-open fill). A signal is computed on day T's
     #    close, so the earliest executable price is T+1 open. T1: Bloke=1 are info-only.
     try:
-        # Most recent signal date strictly before today → those get filled at today's open
         cursor.execute(
             "SELECT DISTINCT Tarih FROM Gunluk_Sinyaller WHERE Tarih < ? ORDER BY Tarih DESC LIMIT 1",
             (bugunun_tarihi,)
@@ -105,7 +126,6 @@ def portfoyu_yonet():
         _prev = cursor.fetchone()
         sinyal_tarihi = _prev[0] if _prev else None
 
-        # Today's opening prices (the fill price for next-day-open entry)
         acilis_df = pd.read_sql(
             "SELECT Hisse, Acilis FROM Hisse_Verileri WHERE Tarih=?",
             conn, params=(bugunun_tarihi,)
@@ -123,12 +143,14 @@ def portfoyu_yonet():
                     continue
                 acilis = acilis_map.get(row['Hisse'])
                 if acilis is None or pd.isna(acilis) or float(acilis) <= 0:
-                    continue  # no opening price available → cannot fill honestly
+                    continue
                 acilis = float(acilis)
                 # Gap filter: skip if today's open already gapped >2% above signal close
                 if row['Kapanis'] and acilis > float(row['Kapanis']) * 1.02:
                     continue
-                cursor.execute('INSERT INTO Aktif_Pozisyonlar (Hisse, Alis_Tarihi, Alis_Fiyati, Guncel_Stop_Loss, Hedef_Fiyat, Vade, Tier) VALUES (?, ?, ?, ?, ?, ?, ?)', (row['Hisse'], bugunun_tarihi, acilis, row['Stop_Loss'], row['Hedef_Fiyat'], row.get('Vade'), row.get('Tier')))
+                # 3.1: compute lot at open price via fixed-fractional sizing
+                _lot_new = _hesapla_lot_pm(acilis, float(row['Stop_Loss']), _ps)
+                cursor.execute('INSERT INTO Aktif_Pozisyonlar (Hisse, Alis_Tarihi, Alis_Fiyati, Guncel_Stop_Loss, Hedef_Fiyat, Vade, Tier, Lot_Adet) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (row['Hisse'], bugunun_tarihi, acilis, row['Stop_Loss'], row['Hedef_Fiyat'], row.get('Vade'), row.get('Tier'), _lot_new))
     except Exception as e:
         print(f"⚠️ Insert hatası: {e}")
 
