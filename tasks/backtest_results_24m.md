@@ -1,7 +1,7 @@
 # Backtest Sonuclari — 8 Variant Karsilastirmasi
 
-**Calisma zamani:** 2026-05-30 03:04
-**Test araligi:** 2024-06-10 -> 2026-05-28
+**Calisma zamani:** 2026-05-31 00:53
+**Test araligi:** 2024-06-10 -> 2026-05-29
 **Variants:** Baseline | Partial Exit (50%@1.5xATR->breakeven) | Fixed ATR (reference) | Partial + Fixed ATR | Ruby Quota=4 | Ruby XU100 EMA50 Gate | Ruby Rolling PF Gate (last-15, PF<0.8) | Live Mode (J3 + Orta Vol-Adaptive)
 
 > Survivorship bias: aktif hisse evreni, tarihsel olarak devreden cikmis hisseler haric.
@@ -40,25 +40,25 @@
 | Metrik | Deger |
 |--------|-------|
 | Toplam Islem | 132 |
-| WR | %35.6 |
-| Profit Factor | 1.55 |
-| Ort. Kazanc | +%28.67 |
-| Ort. Kayip | %-10.24 |
+| WR | %37.9 |
+| Profit Factor | 1.58 |
+| Ort. Kazanc | +%27.65 |
+| Ort. Kayip | %-10.65 |
 | Ort. Tutma | 16.9 gun |
 | En Kotu | %-21.94 |
-| Ort. Hedefe Yakinlik (kaybedenler) | %24.3 |
+| Ort. Hedefe Yakinlik (kaybedenler) | %22.2 |
 
 ### Orta Firsat
 | Metrik | Deger |
 |--------|-------|
 | Toplam Islem | 248 |
-| WR | %33.9 |
-| Profit Factor | 1.24 |
-| Ort. Kazanc | +%22.89 |
-| Ort. Kayip | %-9.47 |
-| Ort. Tutma | 18.5 gun |
+| WR | %36.7 |
+| Profit Factor | 1.28 |
+| Ort. Kazanc | +%21.84 |
+| Ort. Kayip | %-9.92 |
+| Ort. Tutma | 18.6 gun |
 | En Kotu | %-20.78 |
-| Ort. Hedefe Yakinlik (kaybedenler) | %26.6 |
+| Ort. Hedefe Yakinlik (kaybedenler) | %25.2 |
 
 ### Momentum Diamond
 | Metrik | Deger |
@@ -115,10 +115,10 @@
 | Metrik | Deger |
 |--------|-------|
 | Toplam Islem | 337 |
-| WR | %54.9 |
-| Profit Factor | 0.80 |
-| Ort. Kazanc | +%6.21 |
-| Ort. Kayip | %-9.45 |
+| WR | %55.2 |
+| Profit Factor | 0.81 |
+| Ort. Kazanc | +%6.23 |
+| Ort. Kayip | %-9.51 |
 | Ort. Tutma | 11.0 gun |
 | En Kotu | %-18.81 |
 | Ort. Hedefe Yakinlik (kaybedenler) | %13.0 |
@@ -166,25 +166,25 @@
 | Metrik | Deger |
 |--------|-------|
 | Toplam Islem | 171 |
-| WR | %37.4 |
-| Profit Factor | 1.44 |
-| Ort. Kazanc | +%23.72 |
-| Ort. Kayip | %-9.83 |
+| WR | %39.8 |
+| Profit Factor | 1.48 |
+| Ort. Kazanc | +%23.02 |
+| Ort. Kayip | %-10.24 |
 | Ort. Tutma | 15.4 gun |
 | En Kotu | %-21.94 |
-| Ort. Hedefe Yakinlik (kaybedenler) | %28.3 |
+| Ort. Hedefe Yakinlik (kaybedenler) | %26.1 |
 
 ### Orta Firsat
 | Metrik | Deger |
 |--------|-------|
 | Toplam Islem | 308 |
-| WR | %33.4 |
-| Profit Factor | 1.11 |
-| Ort. Kazanc | +%20.34 |
-| Ort. Kayip | %-9.19 |
+| WR | %35.7 |
+| Profit Factor | 1.14 |
+| Ort. Kazanc | +%19.64 |
+| Ort. Kayip | %-9.54 |
 | Ort. Tutma | 16.3 gun |
 | En Kotu | %-20.78 |
-| Ort. Hedefe Yakinlik (kaybedenler) | %26.8 |
+| Ort. Hedefe Yakinlik (kaybedenler) | %25.6 |
 
 ### Momentum Diamond
 | Metrik | Deger |
@@ -241,10 +241,10 @@
 | Metrik | Deger |
 |--------|-------|
 | Toplam Islem | 337 |
-| WR | %54.9 |
-| Profit Factor | 0.80 |
-| Ort. Kazanc | +%6.21 |
-| Ort. Kayip | %-9.45 |
+| WR | %55.2 |
+| Profit Factor | 0.81 |
+| Ort. Kazanc | +%6.23 |
+| Ort. Kayip | %-9.51 |
 | Ort. Tutma | 11.0 gun |
 | En Kotu | %-18.81 |
 | Ort. Hedefe Yakinlik (kaybedenler) | %13.0 |
@@ -292,25 +292,25 @@
 | Metrik | Deger |
 |--------|-------|
 | Toplam Islem | 132 |
-| WR | %35.6 |
-| Profit Factor | 1.55 |
-| Ort. Kazanc | +%28.67 |
-| Ort. Kayip | %-10.24 |
+| WR | %37.9 |
+| Profit Factor | 1.58 |
+| Ort. Kazanc | +%27.65 |
+| Ort. Kayip | %-10.65 |
 | Ort. Tutma | 16.9 gun |
 | En Kotu | %-21.94 |
-| Ort. Hedefe Yakinlik (kaybedenler) | %24.3 |
+| Ort. Hedefe Yakinlik (kaybedenler) | %22.2 |
 
 ### Orta Firsat
 | Metrik | Deger |
 |--------|-------|
 | Toplam Islem | 248 |
-| WR | %33.9 |
-| Profit Factor | 1.24 |
-| Ort. Kazanc | +%22.89 |
-| Ort. Kayip | %-9.47 |
-| Ort. Tutma | 18.5 gun |
+| WR | %36.7 |
+| Profit Factor | 1.28 |
+| Ort. Kazanc | +%21.84 |
+| Ort. Kayip | %-9.92 |
+| Ort. Tutma | 18.6 gun |
 | En Kotu | %-20.78 |
-| Ort. Hedefe Yakinlik (kaybedenler) | %26.6 |
+| Ort. Hedefe Yakinlik (kaybedenler) | %25.2 |
 
 ### Momentum Diamond
 | Metrik | Deger |
@@ -355,25 +355,25 @@
 | Metrik | Deger |
 |--------|-------|
 | Toplam Islem | 132 |
-| WR | %35.6 |
-| Profit Factor | 1.55 |
-| Ort. Kazanc | +%28.67 |
-| Ort. Kayip | %-10.24 |
+| WR | %37.9 |
+| Profit Factor | 1.58 |
+| Ort. Kazanc | +%27.65 |
+| Ort. Kayip | %-10.65 |
 | Ort. Tutma | 16.9 gun |
 | En Kotu | %-21.94 |
-| Ort. Hedefe Yakinlik (kaybedenler) | %24.3 |
+| Ort. Hedefe Yakinlik (kaybedenler) | %22.2 |
 
 ### Orta Firsat
 | Metrik | Deger |
 |--------|-------|
 | Toplam Islem | 248 |
-| WR | %33.9 |
-| Profit Factor | 1.24 |
-| Ort. Kazanc | +%22.89 |
-| Ort. Kayip | %-9.47 |
-| Ort. Tutma | 18.5 gun |
+| WR | %36.7 |
+| Profit Factor | 1.28 |
+| Ort. Kazanc | +%21.84 |
+| Ort. Kayip | %-9.92 |
+| Ort. Tutma | 18.6 gun |
 | En Kotu | %-20.78 |
-| Ort. Hedefe Yakinlik (kaybedenler) | %26.6 |
+| Ort. Hedefe Yakinlik (kaybedenler) | %25.2 |
 
 ### Momentum Diamond
 | Metrik | Deger |
@@ -418,25 +418,25 @@
 | Metrik | Deger |
 |--------|-------|
 | Toplam Islem | 132 |
-| WR | %35.6 |
-| Profit Factor | 1.55 |
-| Ort. Kazanc | +%28.67 |
-| Ort. Kayip | %-10.24 |
+| WR | %37.9 |
+| Profit Factor | 1.58 |
+| Ort. Kazanc | +%27.65 |
+| Ort. Kayip | %-10.65 |
 | Ort. Tutma | 16.9 gun |
 | En Kotu | %-21.94 |
-| Ort. Hedefe Yakinlik (kaybedenler) | %24.3 |
+| Ort. Hedefe Yakinlik (kaybedenler) | %22.2 |
 
 ### Orta Firsat
 | Metrik | Deger |
 |--------|-------|
 | Toplam Islem | 248 |
-| WR | %33.9 |
-| Profit Factor | 1.24 |
-| Ort. Kazanc | +%22.89 |
-| Ort. Kayip | %-9.47 |
-| Ort. Tutma | 18.5 gun |
+| WR | %36.7 |
+| Profit Factor | 1.28 |
+| Ort. Kazanc | +%21.84 |
+| Ort. Kayip | %-9.92 |
+| Ort. Tutma | 18.6 gun |
 | En Kotu | %-20.78 |
-| Ort. Hedefe Yakinlik (kaybedenler) | %26.6 |
+| Ort. Hedefe Yakinlik (kaybedenler) | %25.2 |
 
 ### Momentum Diamond
 | Metrik | Deger |
@@ -480,26 +480,26 @@
 ### Orta Diamond
 | Metrik | Deger |
 |--------|-------|
-| Toplam Islem | 105 |
-| WR | %35.2 |
-| Profit Factor | 1.54 |
-| Ort. Kazanc | +%29.07 |
-| Ort. Kayip | %-10.26 |
-| Ort. Tutma | 16.5 gun |
+| Toplam Islem | 104 |
+| WR | %38.5 |
+| Profit Factor | 1.55 |
+| Ort. Kazanc | +%27.14 |
+| Ort. Kayip | %-10.95 |
+| Ort. Tutma | 16.6 gun |
 | En Kotu | %-19.71 |
-| Ort. Hedefe Yakinlik (kaybedenler) | %25.5 |
+| Ort. Hedefe Yakinlik (kaybedenler) | %22.1 |
 
 ### Orta Firsat
 | Metrik | Deger |
 |--------|-------|
-| Toplam Islem | 232 |
-| WR | %32.3 |
-| Profit Factor | 1.17 |
-| Ort. Kazanc | +%23.67 |
-| Ort. Kayip | %-9.64 |
-| Ort. Tutma | 18.9 gun |
+| Toplam Islem | 235 |
+| WR | %34.9 |
+| Profit Factor | 1.22 |
+| Ort. Kazanc | +%22.69 |
+| Ort. Kayip | %-9.95 |
+| Ort. Tutma | 18.8 gun |
 | En Kotu | %-20.78 |
-| Ort. Hedefe Yakinlik (kaybedenler) | %27.7 |
+| Ort. Hedefe Yakinlik (kaybedenler) | %26.5 |
 
 ### Momentum Diamond
 | Metrik | Deger |
@@ -538,4 +538,4 @@
 |-------|-------|-----|-----|
 | 2024-06→2025-02 | 58 | %39.7 | 1.05 |
 | 2025-02→2025-10 | 101 | %41.6 | 1.71 |
-| 2025-10→2026-06 | 89 | %21.3 | 0.91 |
+| 2025-10→2026-06 | 89 | %29.2 | 1.00 |
