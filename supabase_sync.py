@@ -10,9 +10,11 @@ Tables synced:
   positions      <- all from Aktif_Pozisyonlar
   trades         <- all from Islem_Gecmisi
   market_breadth <- last 90 days (derived: date + breadth_pct + durum)
+  technicals     <- latest indicator snapshot per ticker from Hisse_Indikatorleri
   prices         <- last 90 days from Hisse_Verileri (ticker, date, close)
 """
 
+import argparse
 import os
 import sqlite3
 from datetime import datetime, timedelta
@@ -113,6 +115,51 @@ def sync_tavan_takip(conn, sb):
     print(f"Synced {len(data)} tavan_takip rows")
 
 
+def sync_technicals(conn, sb):
+    """Upsert latest technical-indicator snapshot per ticker (most recent date)."""
+    rows = conn.execute(
+        """
+        SELECT t.Hisse, t.Tarih, t.Kapanis,
+               t.EMA_20, t.EMA_50, t.EMA_200,
+               t.RSI_14, t.MACD, t.MACD_Signal, t.MACD_Hist,
+               t.Stoch_K, t.Stoch_D, t.MFI_14,
+               t.ADX_14, t.Plus_DI, t.Minus_DI,
+               t.ATR_14, t.BB_Ust, t.BB_Orta, t.BB_Alt,
+               t.HV_20, t.HV_20_Pct,
+               t.Hacim_TL, t.Hacim_Ort_20,
+               t.RS_63, t.Dist_52W_Pct
+        FROM Hisse_Indikatorleri t
+        JOIN (
+            SELECT Hisse, MAX(Tarih) AS mx
+            FROM Hisse_Indikatorleri
+            GROUP BY Hisse
+        ) m ON m.Hisse = t.Hisse AND m.mx = t.Tarih
+        """
+    ).fetchall()
+    cols = ["ticker", "date", "close",
+            "ema_20", "ema_50", "ema_200",
+            "rsi_14", "macd", "macd_signal", "macd_hist",
+            "stoch_k", "stoch_d", "mfi_14",
+            "adx_14", "plus_di", "minus_di",
+            "atr_14", "bb_ust", "bb_orta", "bb_alt",
+            "hv_20", "hv_20_pct",
+            "hacim_tl", "hacim_ort_20",
+            "rs_63", "dist_52w_pct"]
+
+    def _clean(v):
+        # JSON can't carry NaN/Inf; Supabase rejects them.
+        if isinstance(v, float) and (v != v or v in (float("inf"), float("-inf"))):
+            return None
+        return v
+
+    data = [{c: _clean(v) for c, v in zip(cols, r)} for r in rows]
+    if data:
+        batch_size = 1000
+        for i in range(0, len(data), batch_size):
+            sb.table("technicals").upsert(data[i:i + batch_size], on_conflict="ticker").execute()
+    print(f"Synced {len(data)} technicals rows")
+
+
 def sync_prices(conn, sb):
     cutoff = (datetime.now() - timedelta(days=SYNC_DAYS)).strftime("%Y-%m-%d")
     rows = conn.execute(
@@ -154,6 +201,13 @@ def _safe_sync(name, fn, conn, sb):
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--light", action="store_true", help="Skip prices sync (faster, lower bandwidth)")
+    parser.add_argument("--full", action="store_true", help="Sync all tables including prices")
+    args = parser.parse_args()
+
+    full = args.full or not args.light
+
     sb = _get_supabase()
     conn = sqlite3.connect(DB_PATH)
     try:
@@ -162,7 +216,11 @@ def main():
         _safe_sync("trades", sync_trades, conn, sb)
         _safe_sync("market_breadth", sync_market_breadth, conn, sb)
         _safe_sync("tavan_takip", sync_tavan_takip, conn, sb)
-        _safe_sync("prices", sync_prices, conn, sb)
+        _safe_sync("technicals", sync_technicals, conn, sb)
+        if full:
+            _safe_sync("prices", sync_prices, conn, sb)
+        else:
+            print("Skipped prices (light sync)")
         print("Sync complete")
     finally:
         conn.close()
